@@ -19,6 +19,7 @@ class IndexPreComputedVals():
         self.document_norm = {}
         self.doc_count = self.index.document_count
         
+        
 class RankingModel():
     @abstractmethod
     def get_ordered_docs(self,query:Mapping[str,TermOccurrence],
@@ -40,18 +41,33 @@ class BooleanRankingModel(RankingModel):
         self.operator = operator
 
     def intersection_all(self,map_lst_occurrences:Mapping[str,List[TermOccurrence]]) -> List[int]:
+        # TODO Melhorar
         set_ids = set()
-        return None
+        i = 0
+        for  term, lst_occurrences in map_lst_occurrences.items():
+            docs_ids = []
+            for term_occurrence in lst_occurrences: 
+                docs_ids.append(term_occurrence.doc_id)
+            if i == 0:
+                i += 1
+                set_ids = set(docs_ids)
+            else:
+                set_ids = set_ids.intersection(docs_ids)
+
+        return list(set_ids)
+    
     def union_all(self,map_lst_occurrences:Mapping[str,List[TermOccurrence]]) -> List[int]:
         set_ids = set()
         
         for  term, lst_occurrences in map_lst_occurrences.items():
-            pass
+            docs_ids = []
+            for term_occurrence in lst_occurrences: 
+                docs_ids.append(term_occurrence.doc_id)
+            set_ids = set_ids.union(docs_ids)
 
-        return None
+        return set_ids
 
-    def get_ordered_docs(self,query:Mapping[str,TermOccurrence],
-                              map_lst_occurrences:Mapping[str,List[TermOccurrence]]) -> (List[int], Mapping[int,float]):
+    def get_ordered_docs(self,query:Mapping[str,TermOccurrence], map_lst_occurrences:Mapping[str,List[TermOccurrence]]) -> (List[int], Mapping[int,float]):
         """Considere que map_lst_occurrences possui as ocorrencias apenas dos termos que existem na consulta"""
         if self.operator == OPERATOR.AND:
             return self.intersection_all(map_lst_occurrences),None
@@ -66,16 +82,16 @@ class VectorRankingModel(RankingModel):
 
     @staticmethod
     def tf(freq_term:int) -> float:
-        return 0
+        return 1 + math.log2(freq_term)
 
     @staticmethod
     def idf(doc_count:int, num_docs_with_term:int )->float:
-        return 0
+        return math.log2(doc_count / num_docs_with_term)
 
     @staticmethod
     def tf_idf(doc_count:int, freq_term:int, num_docs_with_term) -> float:
-        tf = 0
-        idf = 0
+        tf = VectorRankingModel.tf(freq_term)
+        idf = VectorRankingModel.idf(doc_count, num_docs_with_term)
         #print(f"TF:{tf} IDF:{idf} n_i: {num_docs_with_term} N: {doc_count}")
         return tf*idf
 
