@@ -19,21 +19,15 @@ class IndexPreComputedVals():
         self.document_norm = {}
         self.doc_count = self.index.document_count
 
-        lst_peso_por_doc = []
         for i in range(self.doc_count):
-            lst_peso_por_doc.append(0)
-
-        for doc_id in self.index.set_documents:
-            print(self.index.dic_index)
-            print('espaco')
             sum = 0
-            for index_occur in self.index.dic_index.values():
-                print(index_occur)
-                if doc_id == index_occur.doc:
-                    w = VectorRankingModel.tf_idf(self.doc_count, index_occur.term_freq, self.index.document_count_with_term(index_occur.term_id))
-                    w_2 = w*w
-                    sum += w_2
-            self.document_norm[doc_id] = math.sqrt(sum)
+            for term, index_occur in self.index.dic_index.items():
+                lst_occurrence = self.index.get_occurrence_list(term)
+                for term_occurrence in lst_occurrence:
+                    if term_occurrence.doc_id == (i+1):
+                        w = VectorRankingModel.tf_idf(self.doc_count, term_occurrence.term_freq, index_occur.doc_count_with_term)
+                        sum += math.pow(w,2)
+            self.document_norm[i+1] = math.sqrt(sum)
         
 class RankingModel():
     @abstractmethod
@@ -56,16 +50,14 @@ class BooleanRankingModel(RankingModel):
         self.operator = operator
 
     def intersection_all(self,map_lst_occurrences:Mapping[str,List[TermOccurrence]]) -> List[int]:
-        # TODO Melhorar
         set_ids = set()
-        i = 0
-        for  term, lst_occurrences in map_lst_occurrences.items():
-            docs_ids = []
-            for term_occurrence in lst_occurrences: 
-                docs_ids.append(term_occurrence.doc_id)
-            if i == 0:
-                i += 1
+        first_iteration = True
+        for term, lst_occurrences in map_lst_occurrences.items():
+            docs_ids = [term_occurrence.doc_id for term_occurrence in lst_occurrences]
+            
+            if first_iteration:
                 set_ids = set(docs_ids)
+                first_iteration = False
             else:
                 set_ids = set_ids.intersection(docs_ids)
 
