@@ -54,7 +54,7 @@ class BooleanRankingModel(RankingModel):
         first_iteration = True
         for term, lst_occurrences in map_lst_occurrences.items():
             docs_ids = [term_occurrence.doc_id for term_occurrence in lst_occurrences]
-            
+
             if first_iteration:
                 set_ids = set(docs_ids)
                 first_iteration = False
@@ -102,14 +102,18 @@ class VectorRankingModel(RankingModel):
         #print(f"TF:{tf} IDF:{idf} n_i: {num_docs_with_term} N: {doc_count}")
         return tf*idf
 
-    def get_ordered_docs(self,query:Mapping[str,TermOccurrence],
-                              docs_occur_per_term:Mapping[str,List[TermOccurrence]]) -> (List[int], Mapping[int,float]):
-            documents_weight = {}
+    def get_ordered_docs(self, query:Mapping[str,TermOccurrence], docs_occur_per_term:Mapping[str,List[TermOccurrence]]) -> (List[int], Mapping[int,float]):
+        documents_weight = {}
+        for term, term_occurrence in docs_occur_per_term.items():
+            if term in query:
+                w_query = self.tf_idf(self.idx_pre_comp_vals.doc_count, query[term].term_freq, len(term_occurrence))
 
+            for occurrence in term_occurrence:
+                w_doc = self.tf_idf(self.idx_pre_comp_vals.doc_count, occurrence.term_freq, len(term_occurrence))
 
+                weight = (w_doc * w_query) / self.idx_pre_comp_vals.document_norm[occurrence.doc_id]
+                documents_weight[occurrence.doc_id] = weight if occurrence.doc_id not in documents_weight else documents_weight[occurrence.doc_id] + weight
 
-
-
-            #retona a lista de doc ids ordenados de acordo com o TF IDF
-            return self.rank_document_ids(documents_weight),documents_weight
+        #retona a lista de doc ids ordenados de acordo com o TF IDF
+        return self.rank_document_ids(documents_weight), documents_weight
 
