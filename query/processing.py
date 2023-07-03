@@ -170,9 +170,9 @@ class QueryRunner:
 
     @staticmethod
     def main():
-		##TODO
+        ##TODO
         # leia o indice (base da dados fornecida)
-        index = None
+        index = Index.read("wiki.idx")
 
         # Checagem se existe um documento (apenas para teste, deveria existir)
         print(f"Existe o doc? index.hasDocId(105047)")
